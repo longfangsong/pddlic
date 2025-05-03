@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>PDC to PDDL Converter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            font-family: monospace;
+        }
+        button {
+            padding: 10px;
+            font-size: 16px;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PDC to PDDL Converter</h1>
+        <div>
+            <h2>Input PDC</h2>
+            <textarea id="pdc-input" placeholder="Enter PDC code here..."></textarea>
+        </div>
+        <button id="convert">Convert to PDDL</button>
+        <div>
+            <h2>Output PDDL</h2>
+            <textarea id="pddl-output" readonly></textarea>
+        </div>
+        <div id="error" class="error"></div>
+    </div>
+    <script type="module">
+        import init, { pdc_to_pddl } from './pddlic.js';
+
+        async function run() {
+            await init();
+            
+            const pdcInput = document.getElementById('pdc-input');
+            const pddlOutput = document.getElementById('pddl-output');
+            const convertButton = document.getElementById('convert');
+            const errorDiv = document.getElementById('error');
+            
+            convertButton.addEventListener('click', () => {
+                try {
+                    const result = pdc_to_pddl(pdcInput.value);
+                    pddlOutput.value = result;
+                    errorDiv.textContent = '';
+                } catch (e) {
+                    errorDiv.textContent = e;
+                    pddlOutput.value = '';
+                }
+            });
+        }
+
+        run();
+    </script>
+</body>
+</html> 
