@@ -11,18 +11,18 @@ Try it ![here](https://longfangsong.github.io/pddlic/).
 ## Features
 
 - [x] domain
-- [ ] problem
+- [x] problem
 - [x] type
 - [x] predicate
 - [x] action
 - [ ] function
 - [ ] import
-- [ ] ... 
+- [ ] ...
 
 ## Example
 
 ```rust
-domain gripper-strips {
+domain elevator {
     type Passenger, Floor;
 
     predicate origin(person: Passenger, floor: Floor);
@@ -39,7 +39,7 @@ domain gripper-strips {
         requires lift-at(f)
         requires origin(p, f)
         ensures boarded(p);
-   
+
     action depart(f: Floor, p: Passenger)
         requires lift-at(f)
         requires destin(p, f)
@@ -58,11 +58,29 @@ domain gripper-strips {
         ensures lift-at(f2)
         ensures !(lift-at(f1));
 }
+
+problem mixed-f2-p1-u0-v0-g0-a0-n0-A0-B0-N0-F0-r1: elevator {
+    let p0: Passenger;
+    let f0: Floor, f1: Floor;
+
+    init {
+        above(f0, f1);
+        origin(p0, f0);
+        destin(p0, f1);
+        lift-at(f0);
+    }
+
+    goal {
+        served(p0);
+    }
+}
 ```
+
 Will become
 
 ```pddl
-(define (domain gripper-strips)
+; domain.pddl
+(define (domain miconic)
   (:requirements :strips :typing)
   (:types
     Passenger - object
@@ -98,5 +116,24 @@ Will become
   :precondition (and (lift-at ?f) (above ?f2 ?f1))
   :effect (and (lift-at ?f2) (not (lift-at ?f1)))
 )
+)
+```
+
+```pddl
+; problem.pddl
+
+(define (problem mixed-f2-p1-u0-v0-g0-a0-n0-A0-B0-N0-F0-r1)
+  (:domain miconic)
+  (:objects p0    - passenger
+            f0 f1 - floor)
+
+  (:init
+    (above f0 f1)
+    (origin p0 f0)
+    (destin p0 f1)
+    (lift-at f0)
+  )
+
+  (:goal (served p0))
 )
 ```

@@ -1,72 +1,356 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-    <meta charset="utf-8">
-    <title>PDC to PDDL Converter</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .container {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        textarea {
-            width: 100%;
-            height: 200px;
-            font-family: monospace;
-        }
-        button {
-            padding: 10px;
-            font-size: 16px;
-        }
-        .error {
-            color: red;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>PDC to PDDL Converter</h1>
-        <div>
-            <h2>Input PDC</h2>
-            <textarea id="pdc-input" placeholder="Enter PDC code here..."></textarea>
-        </div>
-        <button id="convert">Convert to PDDL</button>
-        <div>
-            <h2>Output PDDL</h2>
-            <textarea id="pddl-output" readonly></textarea>
-        </div>
-        <div id="error" class="error"></div>
-    </div>
-    <script type="module">
-        import init, { pdc_to_pddl } from './pddlic.js';
+    <head>
+        <meta charset="utf-8" />
+        <title>PDC to PDDL Converter</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+            .container {
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+            }
+            .section {
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                padding: 20px;
+                background-color: #f9f9f9;
+            }
+            .section h2 {
+                margin-top: 0;
+                color: #333;
+            }
+            .io-container {
+                display: flex;
+                gap: 20px;
+            }
+            .input-area,
+            .output-area {
+                flex: 1;
+            }
+            textarea {
+                width: 100%;
+                height: 200px;
+                font-family: "Courier New", monospace;
+                font-size: 12px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                padding: 8px;
+                resize: vertical;
+            }
+            .output-area textarea {
+                background-color: #f8f8f8;
+            }
+            button {
+                padding: 10px 20px;
+                font-size: 14px;
+                margin: 5px;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                background-color: #007bff;
+                color: white;
+            }
+            button:hover {
+                background-color: #0056b3;
+            }
+            button:disabled {
+                background-color: #ccc;
+                cursor: not-allowed;
+            }
+            .convert-section {
+                text-align: center;
+                padding: 20px;
+                background-color: #e9ecef;
+                border-radius: 8px;
+            }
+            .error {
+                color: red;
+                background-color: #fff5f5;
+                border: 1px solid #fed7d7;
+                border-radius: 4px;
+                padding: 10px;
+                margin-top: 10px;
+            }
+            .success {
+                color: green;
+                background-color: #f0fff4;
+                border: 1px solid #9ae6b4;
+                border-radius: 4px;
+                padding: 10px;
+                margin-top: 10px;
+            }
+            .example-link {
+                color: #007bff;
+                cursor: pointer;
+                text-decoration: underline;
+                font-size: 12px;
+            }
+            .example-link:hover {
+                color: #0056b3;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>PDC to PDDL Converter</h1>
 
-        async function run() {
-            await init();
-            
-            const pdcInput = document.getElementById('pdc-input');
-            const pddlOutput = document.getElementById('pddl-output');
-            const convertButton = document.getElementById('convert');
-            const errorDiv = document.getElementById('error');
-            
-            convertButton.addEventListener('click', () => {
-                try {
-                    const result = pdc_to_pddl(pdcInput.value);
-                    pddlOutput.value = result;
-                    errorDiv.textContent = '';
-                } catch (e) {
-                    errorDiv.textContent = e;
-                    pddlOutput.value = '';
+            <div class="section">
+                <h2>Domain</h2>
+                <div class="io-container">
+                    <div class="input-area">
+                        <h3>
+                            PDC Domain Input
+                            <span
+                                class="example-link"
+                                onclick="loadDomainExample()"
+                                >📄 Load Example</span
+                            >
+                        </h3>
+                        <textarea
+                            id="domain-input"
+                            placeholder="domain elevator {
+    type Passenger, Floor;
+
+    predicate lift-at(floor: Floor);
+    predicate served(person: Passenger);
+
+    action board(f: Floor, p: Passenger)
+        requires lift-at(f)
+        ensures served(p);
+}"
+                        ></textarea>
+                    </div>
+                    <div class="output-area">
+                        <h3>PDDL Domain Output</h3>
+                        <textarea id="domain-output" readonly></textarea>
+                    </div>
+                </div>
+                <button id="convert-domain">Convert Domain</button>
+            </div>
+
+            <div class="section">
+                <h2>Problem</h2>
+                <div class="io-container">
+                    <div class="input-area">
+                        <h3>
+                            PDC Problem Input
+                            <span
+                                class="example-link"
+                                onclick="loadProblemExample()"
+                                >📄 Load Example</span
+                            >
+                        </h3>
+                        <textarea
+                            id="problem-input"
+                            placeholder="problem test-problem: elevator {
+    let p0: Passenger;
+    let f0: Floor;
+
+    init {
+        lift-at(f0);
+    }
+
+    goal {
+        served(p0);
+    }
+}"
+                        ></textarea>
+                    </div>
+                    <div class="output-area">
+                        <h3>PDDL Problem Output</h3>
+                        <textarea id="problem-output" readonly></textarea>
+                    </div>
+                </div>
+                <button id="convert-problem">Convert Problem</button>
+            </div>
+
+            <div class="convert-section">
+                <button id="convert-both">Convert Both Domain & Problem</button>
+                <button id="clear-all">Clear All</button>
+            </div>
+
+            <div id="message"></div>
+        </div>
+
+        <script type="module">
+            import init, {
+                pdc_to_pddl,
+                problem_to_pddl,
+                pdc_to_domain_and_problem_pddl,
+            } from "./pddlic.js";
+
+            async function run() {
+                await init();
+
+                const domainInput = document.getElementById("domain-input");
+                const problemInput = document.getElementById("problem-input");
+                const domainOutput = document.getElementById("domain-output");
+                const problemOutput = document.getElementById("problem-output");
+                const messageDiv = document.getElementById("message");
+
+                function showMessage(text, isError = false) {
+                    messageDiv.textContent = text;
+                    messageDiv.className = isError ? "error" : "success";
+                    setTimeout(() => {
+                        messageDiv.textContent = "";
+                        messageDiv.className = "";
+                    }, 3000);
                 }
-            });
-        }
 
-        run();
-    </script>
-</body>
-</html> 
+                function clearMessage() {
+                    messageDiv.textContent = "";
+                    messageDiv.className = "";
+                }
+
+                document
+                    .getElementById("convert-domain")
+                    .addEventListener("click", () => {
+                        try {
+                            clearMessage();
+                            if (!domainInput.value.trim()) {
+                                showMessage("Please enter domain code", true);
+                                return;
+                            }
+                            const result = pdc_to_pddl(domainInput.value);
+                            domainOutput.value = result;
+                            showMessage("Domain converted successfully!");
+                        } catch (e) {
+                            showMessage(`Domain conversion error: ${e}`, true);
+                            domainOutput.value = "";
+                        }
+                    });
+
+                document
+                    .getElementById("convert-problem")
+                    .addEventListener("click", () => {
+                        try {
+                            clearMessage();
+                            if (!problemInput.value.trim()) {
+                                showMessage("Please enter problem code", true);
+                                return;
+                            }
+                            const result = problem_to_pddl(
+                                problemInput.value,
+                                "",
+                            );
+                            problemOutput.value = result;
+                            showMessage("Problem converted successfully!");
+                        } catch (e) {
+                            showMessage(`Problem conversion error: ${e}`, true);
+                            problemOutput.value = "";
+                        }
+                    });
+
+                document
+                    .getElementById("convert-both")
+                    .addEventListener("click", () => {
+                        try {
+                            clearMessage();
+                            if (
+                                !domainInput.value.trim() ||
+                                !problemInput.value.trim()
+                            ) {
+                                showMessage(
+                                    "Please enter both domain and problem code",
+                                    true,
+                                );
+                                return;
+                            }
+
+                            const domainResult = pdc_to_pddl(domainInput.value);
+                            const problemResult = problem_to_pddl(
+                                problemInput.value,
+                                "",
+                            );
+
+                            domainOutput.value = domainResult;
+                            problemOutput.value = problemResult;
+                            showMessage(
+                                "Both domain and problem converted successfully!",
+                            );
+                        } catch (e) {
+                            showMessage(`Conversion error: ${e}`, true);
+                        }
+                    });
+
+                document
+                    .getElementById("clear-all")
+                    .addEventListener("click", () => {
+                        domainInput.value = "";
+                        problemInput.value = "";
+                        domainOutput.value = "";
+                        problemOutput.value = "";
+                        clearMessage();
+                        showMessage("All fields cleared");
+                    });
+
+                // Global functions for example loading
+                window.loadDomainExample = function () {
+                    domainInput.value = `domain elevator {
+    type Passenger, Floor;
+
+    predicate origin(person: Passenger, floor: Floor);
+    predicate destin(person: Passenger, floor: Floor);
+    predicate above(floor1: Floor, floor2: Floor);
+    predicate boarded(person: Passenger);
+    predicate not-boarded(person: Passenger);
+    predicate served(person: Passenger);
+    predicate not-served(person: Passenger);
+    predicate lift-at(floor: Floor);
+
+    action board(f: Floor, p: Passenger)
+        requires lift-at(f)
+        requires origin(p, f)
+        ensures boarded(p);
+
+    action depart(f: Floor, p: Passenger)
+        requires lift-at(f)
+        requires destin(p, f)
+        requires boarded(p)
+        ensures !(boarded(p)) & served(p);
+
+    action up(f1: Floor, f2: Floor)
+        requires lift-at(f1)
+        requires above(f1, f2)
+        ensures lift-at(f2)
+        ensures !(lift-at(f1));
+
+    action down(f1: Floor, f2: Floor)
+        requires lift-at(f1)
+        requires above(f2, f1)
+        ensures lift-at(f2)
+        ensures !(lift-at(f1));
+}`;
+                    showMessage("Domain example loaded");
+                };
+
+                window.loadProblemExample = function () {
+                    problemInput.value = `problem mixed-f2-p1-u0-v0-g0-a0-n0-A0-B0-N0-F0-r1: elevator {
+    let p0: Passenger;
+    let f0: Floor, f1: Floor;
+
+    init {
+        above(f0, f1);
+        origin(p0, f0);
+        destin(p0, f1);
+        lift-at(f0);
+    }
+
+    goal {
+        served(p0);
+    }
+}`;
+                    showMessage("Problem example loaded");
+                };
+            }
+
+            run();
+        </script>
+    </body>
+</html>
